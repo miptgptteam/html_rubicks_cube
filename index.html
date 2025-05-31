@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rubik's Cube</title>
+<style>
+body {
+  margin: 0;
+  background: #222;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  user-select: none;
+}
+#scene {
+  perspective: 800px;
+}
+#cube {
+  width: 180px;
+  height: 180px;
+  position: relative;
+  transform-style: preserve-3d;
+  cursor: grab;
+}
+.cubelet {
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  transform-style: preserve-3d;
+}
+.face {
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  background: rgba(0,0,0,0.8);
+  border: 2px solid #111;
+}
+.face.front { transform: rotateY(0deg) translateZ(30px); }
+.face.back { transform: rotateY(180deg) translateZ(30px); }
+.face.right { transform: rotateY(90deg) translateZ(30px); }
+.face.left { transform: rotateY(-90deg) translateZ(30px); }
+.face.top { transform: rotateX(90deg) translateZ(30px); }
+.face.bottom { transform: rotateX(-90deg) translateZ(30px); }
+.face.front { background: green; }
+.face.back { background: blue; }
+.face.right { background: red; }
+.face.left { background: orange; }
+.face.top { background: white; }
+.face.bottom { background: yellow; }
+</style>
+</head>
+<body>
+<div id="scene">
+  <div id="cube"></div>
+</div>
+<script>
+const size = 60; // cubelet size
+const cube = document.getElementById('cube');
+let cubelets = [];
+function createCube() {
+  for (let x=-1; x<=1; x++) {
+    for (let y=-1; y<=1; y++) {
+      for (let z=-1; z<=1; z++) {
+        if (x===0 && y===0 && z===0) continue; // skip center
+        const cubelet = document.createElement('div');
+        cubelet.className = 'cubelet';
+        cubelet.dataset.x = x;
+        cubelet.dataset.y = y;
+        cubelet.dataset.z = z;
+        cubelet.rotX = 0;
+        cubelet.rotY = 0;
+        cubelet.rotZ = 0;
+        ['front','back','right','left','top','bottom'].forEach(cls => {
+          const face = document.createElement('div');
+          face.className = 'face ' + cls;
+          cubelet.appendChild(face);
+        });
+        cube.appendChild(cubelet);
+        cubelets.push(cubelet);
+        updateCubeletTransform(cubelet);
+      }
+    }
+  }
+}
+function updateCubeletTransform(c) {
+  const x = parseInt(c.dataset.x) * size;
+  const y = parseInt(c.dataset.y) * size;
+  const z = parseInt(c.dataset.z) * size;
+  c.style.transform = `translate3d(${x}px, ${y}px, ${z}px) rotateX(${c.rotX}deg) rotateY(${c.rotY}deg) rotateZ(${c.rotZ}deg)`;
+}
+createCube();
+
+// rotate whole cube with mouse drag
+let isDragging = false;
+let lastX, lastY;
+let rotX = -30, rotY = -30;
+function updateCubeRotation() {
+  cube.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+}
+updateCubeRotation();
+
+document.addEventListener('pointerdown', e => {
+  isDragging = true;
+  lastX = e.clientX;
+  lastY = e.clientY;
+  cube.style.cursor = 'grabbing';
+});
+document.addEventListener('pointermove', e => {
+  if (!isDragging) return;
+  const dx = e.clientX - lastX;
+  const dy = e.clientY - lastY;
+  rotY += dx * 0.5;
+  rotX -= dy * 0.5;
+  lastX = e.clientX;
+  lastY = e.clientY;
+  updateCubeRotation();
+});
+document.addEventListener('pointerup', () => {
+  isDragging = false;
+  cube.style.cursor = 'grab';
+});
+
+// helper to rotate layer
+function rotateLayer(axis, layer, dir) {
+  const affected = cubelets.filter(c => parseInt(c.dataset[axis]) === layer);
+  const group = document.createElement('div');
+  group.style.position = 'absolute';
+  group.style.transformStyle = 'preserve-3d';
+  cube.appendChild(group);
+  affected.forEach(c => group.appendChild(c));
+
+  const offset = {x:0, y:0, z:0};
+  offset[axis] = layer * size;
+  const base = `translate3d(${offset.x}px, ${offset.y}px, ${offset.z}px)`;
+
+  group.style.transform = `${base} rotate${axis.toUpperCase()}(0deg)`;
+  // trigger layout
+  group.offsetWidth;
+  group.style.transition = 'transform 0.5s';
+  const angle = dir * 90;
+  group.style.transform = `${base} rotate${axis.toUpperCase()}(${angle}deg)`;
+  group.addEventListener('transitionend', () => {
+    group.style.transition = '';
+    affected.forEach(c => {
+      // update cubelet orientation and position
+      const x = parseInt(c.dataset.x);
+      const y = parseInt(c.dataset.y);
+      const z = parseInt(c.dataset.z);
+      let nx=x, ny=y, nz=z;
+      if (axis==='x') {
+        ny = dir*z*-1;
+        nz = dir*y;
+        c.rotX += angle;
+      } else if (axis==='y') {
+        nx = dir*z;
+        nz = dir*x*-1;
+        c.rotY += angle;
+      } else if (axis==='z') {
+        nx = dir*y*-1;
+        ny = dir*x;
+        c.rotZ += angle;
+      }
+      c.dataset.x = nx;
+      c.dataset.y = ny;
+      c.dataset.z = nz;
+      updateCubeletTransform(c);
+      cube.appendChild(c);
+    });
+    group.remove();
+  }, {once:true});
+}
+
+// double click face to rotate layer
+cube.addEventListener('dblclick', e => {
+  const face = e.target.closest('.face');
+  if (!face) return;
+  const cubelet = face.parentElement;
+  const x = parseInt(cubelet.dataset.x);
+  const y = parseInt(cubelet.dataset.y);
+  const z = parseInt(cubelet.dataset.z);
+  if (face.classList.contains('front')) rotateLayer('z', z, 1);
+  if (face.classList.contains('back')) rotateLayer('z', z, -1);
+  if (face.classList.contains('right')) rotateLayer('x', x, 1);
+  if (face.classList.contains('left')) rotateLayer('x', x, -1);
+  if (face.classList.contains('top')) rotateLayer('y', y, -1);
+  if (face.classList.contains('bottom')) rotateLayer('y', y, 1);
+});
+</script>
+</body>
+</html>

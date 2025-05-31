@@ -129,6 +129,18 @@ function rotateLayer(axis, layer, dir) {
   const group = document.createElement('div');
   group.style.position = 'absolute';
   group.style.transformStyle = 'preserve-3d';
+  const dimension = size * 3;
+  group.style.width = dimension + 'px';
+  group.style.height = dimension + 'px';
+  group.style.top = '0';
+  group.style.left = '0';
+  if (axis === 'x') {
+    group.style.transformOrigin = `${(layer + 1) * size + size / 2}px ${dimension / 2}px ${dimension / 2}px`;
+  } else if (axis === 'y') {
+    group.style.transformOrigin = `${dimension / 2}px ${(layer + 1) * size + size / 2}px ${dimension / 2}px`;
+  } else {
+    group.style.transformOrigin = `${dimension / 2}px ${dimension / 2}px ${(layer + 1) * size + size / 2}px`;
+  }
   cube.appendChild(group);
   affected.forEach(c => group.appendChild(c));
   group.style.transform = 'rotate'+axis.toUpperCase()+'(0deg)';

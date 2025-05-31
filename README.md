@@ -1,6 +1,13 @@
 # html_rubicks_cube
 
-This repository contains a simple interactive Rubik's Cube implemented with HTML, CSS and JavaScript. You can rotate the whole cube by dragging with the mouse and rotate individual faces by double-clicking on them.
+This repository contains a simple interactive Rubik's Cube implemented with HTML, CSS and JavaScript.
+
+## Usage
+
+* **Rotate the entire cube** – click and hold the mouse (or touch and drag) anywhere on the screen and move the pointer. The cube will follow the drag direction.
+* **Rotate a face** – double‑click (or double‑tap) on any visible square of the face you want to turn. The corresponding layer will rotate 90°.
+
+After each move you can continue dragging to view the cube from another angle or double‑click another face to rotate a different layer.
 
 ## How to view via GitHub Pages
 
